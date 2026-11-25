@@ -43,12 +43,24 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
 
   Future<void> seleccionarFecha(bool esSalida) async {
     final f = await showDatePicker(context: context, initialDate: DateTime.now().add(const Duration(days: 1)), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 90)));
-    if (f != null) setState(() { if (esSalida) fechaSalida = f; else fechaRetorno = f; });
+    if (f != null) {
+      setState(() { if (esSalida) {
+      fechaSalida = f;
+    } else {
+      fechaRetorno = f;
+    } });
+    }
   }
 
   Future<void> seleccionarHora(bool esSalida) async {
     final h = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 5, minute: 0));
-    if (h != null) setState(() { if (esSalida) horaSalida = h; else horaRetorno = h; });
+    if (h != null) {
+      setState(() { if (esSalida) {
+      horaSalida = h;
+    } else {
+      horaRetorno = h;
+    } });
+    }
   }
 
   Future<void> enviar() async {
@@ -157,3 +169,4 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
     );
   }
 }
+

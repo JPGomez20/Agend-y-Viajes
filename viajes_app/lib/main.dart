@@ -29,3 +29,4 @@ class MyApp extends StatelessWidget {
 }
 
 final supabase = Supabase.instance.client;
+

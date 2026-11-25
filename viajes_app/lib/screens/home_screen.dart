@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)), child: Icon(icono, color: color, size: 28)),
+              Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)), child: Icon(icono, color: color, size: 28)),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), Text(subtitulo, style: const TextStyle(color: Colors.grey, fontSize: 13))])),
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
@@ -46,3 +46,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
