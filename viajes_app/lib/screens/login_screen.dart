@@ -31,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 16),
                   Text('Viajes Empresa', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                   Text('Centros de cultivo • Taxi corporativo', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text('MAR ANDINO', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+                  Text('PERUVIAN ANDEAN TROUT SAC', style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -76,3 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+
+

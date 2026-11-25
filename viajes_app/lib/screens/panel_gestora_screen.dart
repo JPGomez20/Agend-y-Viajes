@@ -266,13 +266,14 @@ class _PanelGestoraScreenState extends State<PanelGestoraScreen>
   }
 
   Widget _lista(List<Map<String, dynamic>> lista) {
-    if (lista.isEmpty)
+    if (lista.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Text('No hay viajes en esta categoría'),
         ),
       );
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -314,8 +315,9 @@ class _PanelGestoraScreenState extends State<PanelGestoraScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (cargando)
+    if (cargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final centros = viajes.where(esCentro).toList();
     final taxis = viajes.where(esTaxi).toList();
     final pendientes = viajes.where((v) => v['estado'] == 'pendiente').length;

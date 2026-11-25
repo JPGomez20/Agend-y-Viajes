@@ -75,8 +75,9 @@ class _AprobarScreenState extends State<AprobarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (cargando)
+    if (cargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Viajes por aprobar')),
       body: viajes.isEmpty
