@@ -9,7 +9,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _nombreController = TextEditingController();
-  final _correoController = TextEditingController();
+  String rol = 'trabajador'; // trabajador, jefe, gestora
 
   @override
   Widget build(BuildContext context) {
@@ -40,21 +40,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Bienvenido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const Text('Ingresa para solicitar o gestionar un viaje', style: TextStyle(color: Colors.grey)),
+                  const Text('Ingresa con tu rol', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 24),
                   TextField(controller: _nombreController, decoration: const InputDecoration(labelText: 'Tu nombre', prefixIcon: Icon(Icons.person_outline))),
                   const SizedBox(height: 14),
-                  TextField(controller: _correoController, decoration: const InputDecoration(labelText: 'Correo empresa', prefixIcon: Icon(Icons.email_outlined))),
+                  const Text('¿Cuál es tu rol?', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: rol,
+                    decoration: const InputDecoration(prefixIcon: Icon(Icons.badge_outlined)),
+                    items: const [
+                      DropdownMenuItem(value: 'trabajador', child: Text('Trabajador')),
+                      DropdownMenuItem(value: 'jefe', child: Text('Jefe')),
+                      DropdownMenuItem(value: 'gestora', child: Text('Gestora')),
+                      DropdownMenuItem(value: 'taxista', child: Text('Conductor')),
+                    ],
+                    onChanged: (v) => setState(() => rol = v!),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
                       if (_nombreController.text.isEmpty) return;
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeScreen(nombre: _nombreController.text)));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeScreen(nombre: _nombreController.text, rol: rol)));
                     },
                     child: const Text('Ingresar'),
                   ),
                   const SizedBox(height: 12),
-                  const Center(child: Text('Versión interna • Solo personal autorizado', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                  const Center(child: Text('Por ahora elegimos el rol a mano. Luego lo conectamos con el correo de la empresa.', style: TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
                 ],
               ),
             ),
@@ -64,4 +76,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
