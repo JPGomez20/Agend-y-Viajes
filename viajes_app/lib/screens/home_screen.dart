@@ -3,6 +3,7 @@ import 'pedir_viaje_screen.dart';
 import 'aprobar_screen.dart';
 import 'panel_gestora_screen.dart';
 import 'mis_viajes_taxista_screen.dart';
+import 'mis_viajes_trabajador_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final String nombre;
@@ -53,6 +54,9 @@ class HomeScreen extends StatelessWidget {
             if (rol != 'taxista')
               _opcion(context, icono: Icons.add_location_alt, titulo: 'Pedir Viaje', subtitulo: 'Solicita taxi a Centro o A-B', color: const Color(0xFF1B7A3D), destino: PedirViajeScreen(nombre: nombre)),
             if (rol != 'taxista') const SizedBox(height: 12),
+            
+            if (rol != 'taxista')
+              _opcion(context, icono: Icons.history, titulo: 'Mis Viajes', subtitulo: 'Ver si tu conductor ya aceptó', color: Colors.purple, destino: MisViajesTrabajadorScreen(nombre: nombre)),
 
             if (rol == 'jefe' || rol == 'gestora')
               _opcion(context, icono: Icons.check_circle_outline, titulo: 'Aprobar Viajes', subtitulo: 'Aprueba los viajes de tu equipo', color: const Color(0xFFF59E0B), destino: const AprobarScreen()),
