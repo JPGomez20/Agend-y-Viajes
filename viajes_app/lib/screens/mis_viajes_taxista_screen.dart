@@ -213,7 +213,18 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
                             Row(
                               children: [
                                 if (v['estado'] == 'asignado' ||
-                                    v['estado'] == 'aprobado')
+                                  v['estado'] == 'aprobado')
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                    onPressed: () => cambiarEstado(
+                                      v['id'].toString(),
+                                      'aceptado',
+                                    ),
+                                    child: const Text('Aceptar'),
+                                  ),
+                                ),
+                                if (v['estado'] == 'aceptado')
                                   Expanded(
                                     child: ElevatedButton(
                                       onPressed: () => cambiarEstado(
@@ -252,4 +263,4 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
       ),
     );
   }
-}
+} 
