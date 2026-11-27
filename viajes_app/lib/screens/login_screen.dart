@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -8,8 +9,27 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _nombreController = TextEditingController();
-  String rol = 'trabajador'; // trabajador, jefe, gestora
+  final _correoC = TextEditingController();
+  final _passC = TextEditingController();
+  bool cargando = false;
+  String error = '';
+
+  Future<void> ingresar() async {
+    setState(() { cargando = true; error = ''; });
+    try {
+      final res = await supabase.auth.signInWithPassword(email: _correoC.text.trim(), password: _passC.text.trim());
+      final userId = res.user!.id;
+      final perfil = await supabase.from('perfiles').select().eq('id', userId).single();
+      final rol = perfil['rol'] as String;
+      final nombre = perfil['nombre'] as String;
+      if (!mounted) return;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(nombre: nombre, rol: rol)));
+    } catch (e) {
+      setState(() { error = 'Correo o contraseña incorrectos.'; });
+    } finally {
+      setState(() { cargando = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,19 +40,16 @@ class _LoginScreenState extends State<LoginScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
-              decoration: const BoxDecoration(
-                color: Color(0xFF1B7A3D),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28)),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF1B7A3D), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28))),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(radius: 28, backgroundColor: Colors.white, child: Icon(Icons.directions_car, color: Color(0xFF1B7A3D), size: 30)),
+                  CircleAvatar(radius: 28, backgroundColor: Colors.white, child: Icon(Icons.grass, color: Color(0xFF1B7A3D), size: 30)),
                   SizedBox(height: 16),
-                  Text('Viajes Empresa', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                  Text('Centros de cultivo • Taxi corporativo', style: TextStyle(color: Colors.white70, fontSize: 14)),
                   Text('MAR ANDINO', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                   Text('PERUVIAN ANDEAN TROUT SAC', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  SizedBox(height: 4),
+                  Text('Viajes Corporativos', style: TextStyle(color: Colors.white70, fontSize: 14)),
                 ],
               ),
             ),
@@ -42,33 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Bienvenido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const Text('Ingresa con tu rol', style: TextStyle(color: Colors.grey)),
+                  const Text('Ingresa con tu correo de la empresa', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 24),
-                  TextField(controller: _nombreController, decoration: const InputDecoration(labelText: 'Tu nombre', prefixIcon: Icon(Icons.person_outline))),
+                  TextField(controller: _correoC, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Correo', prefixIcon: Icon(Icons.email_outlined))),
                   const SizedBox(height: 14),
-                  const Text('¿Cuál es tu rol?', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: rol,
-                    decoration: const InputDecoration(prefixIcon: Icon(Icons.badge_outlined)),
-                    items: const [
-                      DropdownMenuItem(value: 'trabajador', child: Text('Trabajador')),
-                      DropdownMenuItem(value: 'jefe', child: Text('Jefe')),
-                      DropdownMenuItem(value: 'gestora', child: Text('Gestora')),
-                      DropdownMenuItem(value: 'taxista', child: Text('Conductor')),
-                    ],
-                    onChanged: (v) => setState(() => rol = v!),
-                  ),
+                  TextField(controller: _passC, obscureText: true, decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline))),
+                  if (error.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error, style: const TextStyle(color: Colors.red))),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_nombreController.text.isEmpty) return;
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeScreen(nombre: _nombreController.text, rol: rol)));
-                    },
-                    child: const Text('Ingresar'),
-                  ),
+                  SizedBox(width: double.infinity, child: ElevatedButton(onPressed: cargando ? null : ingresar, child: cargando ? const CircularProgressIndicator(color: Colors.white) : const Text('Ingresar'))),
                   const SizedBox(height: 12),
-                  const Center(child: Text('Por ahora elegimos el rol a mano. Luego lo conectamos con el correo de la empresa.', style: TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
+                  const Center(child: Text('Tu rol lo asigna la empresa, no lo puedes cambiar.', style: TextStyle(fontSize: 12, color: Colors.grey))),
                 ],
               ),
             ),
@@ -78,6 +78,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-
-

@@ -2,6 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../services/export_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+Future<void> avisarCarlosPorWhatsApp({
+  required String origen,
+  required String destino,
+  required String fecha,
+  required String hora,
+  required String pasajero,
+}) async {
+  const telefonoCarlos = '51948786732'; // 948786732 provisional
+  final mensaje = 'Hola Carlos, te asignaron un viaje \n\n'
+      'De: $origen\n'
+      'A: $destino\n'
+      'Fecha: $fecha - $hora\n'
+      'Pasajero: $pasajero\n\n'
+      'Por favor confirma en la app Mar Andino.';
+  final url = Uri.parse('https://wa.me/$telefonoCarlos?text=${Uri.encodeComponent(mensaje)}');
+  await launchUrl(url, mode: LaunchMode.externalApplication);
+}
 
 class PanelGestoraScreen extends StatefulWidget {
   const PanelGestoraScreen({super.key});
@@ -169,6 +188,17 @@ class _PanelGestoraScreenState extends State<PanelGestoraScreen>
             })
             .eq('id', id);
       } catch (_) {}
+      // WhatsApp a Carlos - solo si el conductor es Carlos
+      final viajeActual = viajes.firstWhere((v) => v['id'].toString() == id, orElse: () => {});
+      if ((res['conductor'] ?? '').toString().toLowerCase().contains('carlos')) {
+        await avisarCarlosPorWhatsApp(
+          origen: viajeActual['punto_recojo']?.toString() ?? 'Mar Andino',
+          destino: viajeActual['centros']?['nombre']?.toString() ?? 'Destino',
+          fecha: viajeActual['fecha_salida']?.toString() ?? '',
+          hora: viajeActual['hora_salida']?.toString() ?? '',
+          pasajero: viajeActual['motivo']?.toString() ?? '',
+        );
+      }
       setState(() {
         final i = viajes.indexWhere((v) => v['id'].toString() == id);
         if (i != -1) {
