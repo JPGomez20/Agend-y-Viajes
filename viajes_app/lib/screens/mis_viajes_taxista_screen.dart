@@ -68,7 +68,16 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
           .from('viajes')
           .update({'estado': nuevoEstado})
           .eq('id', id);
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      debugPrint('Error al actualizar el estado del viaje: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo actualizar el viaje.')),
+      );
+      return;
+    }
+    if (!mounted) return;
     setState(() {
       final i = viajes.indexWhere((v) => v['id'].toString() == id);
       if (i != -1) viajes[i]['estado'] = nuevoEstado;
@@ -87,8 +96,9 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (cargando)
+    if (cargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final pendientes = viajes
         .where((v) => v['estado'] != 'completado')
         .toList();
@@ -189,7 +199,7 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorEstado(v['estado'])
-                                      .withOpacity(0.15),
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -263,7 +273,4 @@ class _MisViajesTaxistaScreenState extends State<MisViajesTaxistaScreen> {
       ),
     );
   }
-} 
-
-
-
+}

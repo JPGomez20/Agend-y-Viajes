@@ -68,7 +68,7 @@ class ExportService {
     if (bytes != null) {
       final blob = html.Blob([Uint8List.fromList(bytes)], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
+      html.AnchorElement(href: url)
         ..setAttribute('download', 'liquidacion_${DateTime.now().month}_${DateTime.now().year}.xlsx')
         ..click();
       html.Url.revokeObjectUrl(url);

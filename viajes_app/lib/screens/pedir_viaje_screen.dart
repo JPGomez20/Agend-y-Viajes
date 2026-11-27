@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../utils/trip_schedule_validation.dart';
 
 class PedirViajeScreen extends StatefulWidget {
   final String nombre;
@@ -23,6 +24,11 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
   bool soloIda = false;
   int acompanantes = 0;
   List<Map<String, dynamic>> centros = [];
+  bool cargandoCentros = true;
+  bool enviando = false;
+  String? errorCentros;
+  final _otroPuntoController = TextEditingController();
+  final _direccionCasaController = TextEditingController();
 
   @override
   void initState() {
@@ -33,28 +39,61 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
   Future<void> cargarCentros() async {
     try {
       final res = await supabase.from('centros').select().order('nombre');
-      setState(() => centros = List<Map<String, dynamic>>.from(res));
-    } catch (_) {
-      setState(
-        () => centros = [
-          {'id': '1', 'nombre': 'CENTRO 1'},
-          {'id': '2', 'nombre': 'CENTRO 2'},
-        ],
-      );
+      if (!mounted) return;
+      setState(() {
+        centros = List<Map<String, dynamic>>.from(res);
+        errorCentros = null;
+        cargandoCentros = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar centros: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() {
+        errorCentros = 'No se pudieron cargar los centros.';
+        cargandoCentros = false;
+      });
     }
   }
 
+  Future<void> reintentarCargaCentros() async {
+    setState(() {
+      cargandoCentros = true;
+      errorCentros = null;
+    });
+    await cargarCentros();
+  }
+
   Future<void> seleccionarFecha(bool esSalida) async {
+    final hoy = DateUtils.dateOnly(DateTime.now());
+    final primeraFecha = esSalida
+        ? hoy
+        : fechaSalida == null
+            ? hoy
+            : DateUtils.dateOnly(fechaSalida!);
+    final ultimaFecha = hoy.add(const Duration(days: 90));
+    final fechaSugerida = esSalida
+        ? fechaSalida ?? hoy.add(const Duration(days: 1))
+        : fechaRetorno ?? fechaSalida ?? hoy.add(const Duration(days: 1));
+    final fechaInicial = fechaSugerida.isBefore(primeraFecha)
+        ? primeraFecha
+        : fechaSugerida.isAfter(ultimaFecha)
+            ? ultimaFecha
+            : fechaSugerida;
     final f = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      initialDate: DateUtils.dateOnly(fechaInicial),
+      firstDate: primeraFecha,
+      lastDate: ultimaFecha,
     );
-    if (f != null) {
+    if (f != null && mounted) {
       setState(() {
         if (esSalida) {
           fechaSalida = f;
+          if (fechaRetorno != null && fechaRetorno!.isBefore(f)) {
+            fechaRetorno = null;
+            horaRetorno = null;
+          }
         } else {
           fechaRetorno = f;
         }
@@ -65,9 +104,11 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
   Future<void> seleccionarHora(bool esSalida) async {
     final h = await showTimePicker(
       context: context,
-      initialTime: const TimeOfDay(hour: 5, minute: 0),
+      initialTime: esSalida
+          ? horaSalida ?? const TimeOfDay(hour: 5, minute: 0)
+          : horaRetorno ?? const TimeOfDay(hour: 5, minute: 0),
     );
-    if (h != null) {
+    if (h != null && mounted) {
       setState(() {
         if (esSalida) {
           horaSalida = h;
@@ -79,55 +120,146 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
   }
 
   Future<void> enviar() async {
-    if (fechaSalida == null || horaSalida == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Falta fecha y hora')));
+    if (enviando) return;
+    final origenEsOtro = tipoViaje == 'centro' && puntoRecojo == 'Otro punto';
+    final origenFinal = tipoViaje == 'centro'
+        ? origenEsOtro
+            ? _otroPuntoController.text.trim()
+            : puntoRecojo
+        : _origenController.text.trim();
+    final destinoIngresado = _destinoController.text.trim();
+
+    if (tipoViaje == 'taxi' && origenFinal.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe el punto de recojo (Punto A)')),
+      );
       return;
     }
-    if (tipoViaje == 'centro' && centroId == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Elige un centro')));
+    if (origenEsOtro && origenFinal.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe el punto de recojo')),
+      );
       return;
     }
-    if (tipoViaje == 'taxi' && _destinoController.text.isEmpty) {
+    if (tipoViaje == 'centro' &&
+        puntoRecojo == 'Mi casa' &&
+        _direccionCasaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe la dirección de tu casa')),
+      );
+      return;
+    }
+    if (tipoViaje == 'taxi' && destinoIngresado.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Escribe el destino (Punto B)')),
       );
       return;
     }
+    if (tipoViaje == 'centro' &&
+        (centroId == null ||
+            !centros.any((c) => c['id'].toString() == centroId))) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Elige un centro')));
+      return;
+    }
+
+    final salida = fechaSalida == null || horaSalida == null
+        ? null
+        : DateTime(
+            fechaSalida!.year,
+            fechaSalida!.month,
+            fechaSalida!.day,
+            horaSalida!.hour,
+            horaSalida!.minute,
+          );
+    final retorno = fechaRetorno == null || horaRetorno == null
+        ? null
+        : DateTime(
+            fechaRetorno!.year,
+            fechaRetorno!.month,
+            fechaRetorno!.day,
+            horaRetorno!.hour,
+            horaRetorno!.minute,
+          );
+    final retornoIncompleto =
+        (fechaRetorno == null) != (horaRetorno == null);
+    final requiereRetorno = tipoViaje == 'taxi' && !soloIda;
+    final errorHorario = validarHorarioSolicitud(
+      salida: salida,
+      retorno: retorno,
+      requiereRetorno: requiereRetorno,
+      retornoIncompleto: retornoIncompleto,
+      ahora: DateTime.now(),
+    );
+    if (errorHorario != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorHorario)));
+      return;
+    }
 
     final destinoFinal = tipoViaje == 'centro'
-        ? centros.firstWhere((c) => c['id'].toString() == centroId)['nombre']
-        : _destinoController.text;
-    final origenFinal = tipoViaje == 'centro'
-        ? puntoRecojo
-        : _origenController.text;
+        ? centros
+            .firstWhere((c) => c['id'].toString() == centroId)['nombre']
+            .toString()
+        : destinoIngresado;
+    final origenDeCentro = switch (puntoRecojo) {
+      'Mi casa' => 'Mi casa: ${_direccionCasaController.text.trim()}',
+      'Otro punto' => _otroPuntoController.text.trim(),
+      _ => puntoRecojo,
+    };
+    final origenParaSolicitud =
+        tipoViaje == 'centro' ? origenDeCentro : origenFinal;
 
+    setState(() => enviando = true);
     try {
       await supabase.from('viajes').insert({
         'centro_id': tipoViaje == 'centro' ? centroId : null,
         'fecha_salida': fechaSalida!.toIso8601String().split('T')[0],
-        'hora_salida': '${horaSalida!.hour}:${horaSalida!.minute}:00',
-        'fecha_retorno': fechaRetorno?.toIso8601String().split('T')[0],
-        'hora_retorno': horaRetorno != null
-            ? '${horaRetorno!.hour}:${horaRetorno!.minute}:00'
+        'hora_salida':
+            '${horaSalida!.hour.toString().padLeft(2, '0')}:${horaSalida!.minute.toString().padLeft(2, '0')}:00',
+        'fecha_retorno': soloIda
+            ? null
+            : fechaRetorno?.toIso8601String().split('T')[0],
+        'hora_retorno': soloIda
+            ? null
+            : horaRetorno != null
+                ? '${horaRetorno!.hour.toString().padLeft(2, '0')}:${horaRetorno!.minute.toString().padLeft(2, '0')}:00'
             : null,
-        'punto_recojo': '$origenFinal -> $destinoFinal',
+        'punto_recojo': '$origenParaSolicitud -> $destinoFinal',
         'acompanantes': acompanantes,
         'estado': 'pendiente',
-        // Guardamos el tipo en motivo por ahora para que la gestora lo vea
         'motivo': tipoViaje == 'centro'
-            ? 'CENTRO: ${_motivoController.text}'
-            : 'TAXI A-B: ${_motivoController.text} | Solo ida: $soloIda',
+            ? 'CENTRO: ${_motivoController.text.trim()}'
+            : 'TAXI A-B: ${_motivoController.text.trim()} | Solo ida: $soloIda',
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Solicitud enviada')));
       Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Guardado en modo prueba: $e')));
+    } catch (e, stackTrace) {
+      debugPrint('Error al enviar solicitud: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo enviar la solicitud. Verifica tu conexión e inténtalo nuevamente.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => enviando = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _origenController.dispose();
+    _destinoController.dispose();
+    _motivoController.dispose();
+    _otroPuntoController.dispose();
+    _direccionCasaController.dispose();
+    super.dispose();
   }
 
   @override
@@ -157,14 +289,30 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
                 '¿A qué centro vas?',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              ...centros.map(
-                (c) => RadioListTile<String>(
-                  title: Text(c['nombre']),
-                  value: c['id'].toString(),
-                  groupValue: centroId,
-                  onChanged: (v) => setState(() => centroId = v),
+              if (cargandoCentros)
+                const Center(child: CircularProgressIndicator())
+              else if (errorCentros != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(errorCentros!),
+                    TextButton(
+                      onPressed: reintentarCargaCentros,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                )
+              else if (centros.isEmpty)
+                const Text('No hay centros disponibles.')
+              else
+                ...centros.map(
+                  (c) => RadioListTile<String>(
+                    title: Text(c['nombre'].toString()),
+                    value: c['id'].toString(),
+                    groupValue: centroId,
+                    onChanged: (v) => setState(() => centroId = v),
+                  ),
                 ),
-              ),
               const Text(
                 'Punto de recojo',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -176,8 +324,27 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
                     ['Oficina central', 'Mi casa', 'Aeropuerto', 'Otro punto']
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
-                onChanged: (v) => setState(() => puntoRecojo = v!),
+                onChanged: (v) {
+                  if (v != null) setState(() => puntoRecojo = v);
+                },
               ),
+              if (puntoRecojo == 'Otro punto')
+                TextField(
+                  controller: _otroPuntoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Especifica el punto de recojo',
+                  ),
+                ),
+              if (puntoRecojo == 'Mi casa')
+                TextField(
+                  controller: _direccionCasaController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Dirección de casa',
+                    hintText: 'Calle, número y referencia',
+                    prefixIcon: Icon(Icons.home_outlined),
+                  ),
+                ),
             ] else ...[
               TextField(
                 controller: _origenController,
@@ -198,7 +365,13 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
               SwitchListTile(
                 title: const Text('Solo ida (sin retorno)'),
                 value: soloIda,
-                onChanged: (v) => setState(() => soloIda = v),
+                onChanged: (v) => setState(() {
+                  soloIda = v;
+                  if (v) {
+                    fechaRetorno = null;
+                    horaRetorno = null;
+                  }
+                }),
               ),
             ],
             const SizedBox(height: 12),
@@ -229,7 +402,7 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
               trailing: const Icon(Icons.access_time),
               onTap: () => seleccionarHora(true),
             ),
-            if (!soloIda) ...[
+            if (tipoViaje != 'taxi' || !soloIda) ...[
               ListTile(
                 title: const Text('Fecha retorno'),
                 subtitle: Text(
@@ -269,8 +442,16 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: enviar,
-              child: const Text('Solicitar Viaje'),
+              onPressed: enviando || cargandoCentros && tipoViaje == 'centro'
+                  ? null
+                  : enviar,
+              child: enviando
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Solicitar Viaje'),
             ),
           ],
         ),
@@ -280,8 +461,14 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
 
   Widget _tipoCard(String valor, String titulo, String subtitulo) {
     final activo = tipoViaje == valor;
-    return GestureDetector(
-      onTap: () => setState(() => tipoViaje = valor),
+    return Semantics(
+      button: true,
+      selected: activo,
+      child: GestureDetector(
+      onTap: () => setState(() {
+        tipoViaje = valor;
+        if (valor != 'taxi') soloIda = false;
+      }),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -311,10 +498,7 @@ class _PedirViajeScreenState extends State<PedirViajeScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 }
-
-
-
-

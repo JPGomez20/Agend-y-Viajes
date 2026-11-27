@@ -36,13 +36,13 @@ class _MisViajesTrabajadorScreenState extends State<MisViajesTrabajadorScreen> {
   }
 
   String textoEstado(String estado) {
-    if (estado == 'pendiente') return '⏳ Esperando aprobación del jefe';
-    if (estado == 'aprobado') return '✅ Aprobado, esperando asignación';
-    if (estado == 'asignado') return '📋 Asignado, esperando que el conductor acepte';
-    if (estado == 'aceptado') return '✅ Aceptado por el conductor';
-    if (estado == 'en_camino') return '🚕 En camino, tu conductor ya viene';
-    if (estado == 'completado') return '✅ Viaje completado';
-    if (estado == 'rechazado') return '❌ Rechazado por el jefe';
+    if (estado == 'pendiente') return 'Esperando aprobación del jefe';
+    if (estado == 'aprobado') return 'Aprobado, esperando asignación';
+    if (estado == 'asignado') return 'Asignado, esperando que el conductor acepte';
+    if (estado == 'aceptado') return 'Aceptado por el conductor';
+    if (estado == 'en_camino') return 'En camino, tu conductor ya viene';
+    if (estado == 'completado') return 'Viaje completado';
+    if (estado == 'rechazado') return 'Rechazado por el jefe';
     return estado;
   }
 
@@ -90,20 +90,20 @@ class _MisViajesTrabajadorScreenState extends State<MisViajesTrabajadorScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text('🕐 Hora: ${v['hora_salida']}'),
-                          Text('📍 Recojo: ${v['punto_recojo']}'),
-                          Text('📝 ${v['motivo'] ?? ''}'),
+                          Text('Hora: ${v['hora_salida']}'),
+                          Text('Recojo: ${v['punto_recojo']}'),
+                          Text('Motivo: ${v['motivo'] ?? ''}'),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: colorEstado(estado).withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(color: colorEstado(estado).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
                             child: Text(textoEstado(estado), style: TextStyle(color: colorEstado(estado), fontWeight: FontWeight.bold, fontSize: 13)),
                           ),
                           if (tieneConductor) ...[
                             const SizedBox(height: 8),
-                            Text('🚕 Conductor: ${v['conductor']} - Placa: ${v['placa']}'),
-                            if (estado == 'aceptado') const Text('✅ Tu conductor ya aceptó, ya viene por ti.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                            if (estado == 'asignado') const Text('⏳ Tu conductor todavía no acepta, espera un momento.', style: TextStyle(color: Colors.orange)),
+                            Text('Conductor: ${v['conductor']} - Placa: ${v['placa']}'),
+                            if (estado == 'aceptado') const Text('Tu conductor ya aceptó y está en camino.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                            if (estado == 'asignado') const Text('Tu conductor todavía no acepta. Espera un momento.', style: TextStyle(color: Colors.orange)),
                           ],
                         ],
                       ),
@@ -118,6 +118,3 @@ class _MisViajesTrabajadorScreenState extends State<MisViajesTrabajadorScreen> {
     );
   }
 }
-
-
-

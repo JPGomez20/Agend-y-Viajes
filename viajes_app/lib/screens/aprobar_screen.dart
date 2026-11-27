@@ -61,9 +61,17 @@ class _AprobarScreenState extends State<AprobarScreen> {
           .from('viajes')
           .update({'estado': nuevoEstado})
           .eq('id', id);
-    } catch (_) {}
-    setState(() => viajes.removeWhere((v) => v['id'].toString() == id));
+    } catch (e, stackTrace) {
+      debugPrint('Error al cambiar el estado del viaje: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo actualizar el viaje.')),
+      );
+      return;
+    }
     if (!mounted) return;
+    setState(() => viajes.removeWhere((v) => v['id'].toString() == id));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

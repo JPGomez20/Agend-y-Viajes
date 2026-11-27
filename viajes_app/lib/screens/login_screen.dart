@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> ingresar() async {
     setState(() { cargando = true; error = ''; });
     try {
-      final res = await supabase.auth.signInWithPassword(email: _correoC.text.trim(), password: _passC.text.trim());
+      final res = await supabase.auth.signInWithPassword(email: _correoC.text.trim(), password: _passC.text);
       final userId = res.user!.id;
       final perfil = await supabase.from('perfiles').select().eq('id', userId).single();
       final rol = perfil['rol'] as String;
@@ -25,10 +25,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen(nombre: nombre, rol: rol)));
     } catch (e) {
-      setState(() { error = 'Correo o contraseña incorrectos.'; });
+      if (mounted) setState(() { error = 'Correo o contraseña incorrectos.'; });
     } finally {
-      setState(() { cargando = false; });
+      if (mounted) setState(() { cargando = false; });
     }
+  }
+
+  @override
+  void dispose() {
+    _correoC.dispose();
+    _passC.dispose();
+    super.dispose();
   }
 
   @override

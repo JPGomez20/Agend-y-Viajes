@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
 import 'pedir_viaje_screen.dart';
 import 'aprobar_screen.dart';
 import 'panel_gestora_screen.dart';
@@ -26,7 +27,7 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)), child: Icon(icono, color: color, size: 28)),
+              Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)), child: Icon(icono, color: color, size: 28)),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), Text(subtitulo, style: const TextStyle(color: Colors.grey, fontSize: 13))])),
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
@@ -37,10 +38,34 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _cerrarSesion(BuildContext context) async {
+    try {
+      await supabase.auth.signOut();
+      if (!context.mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    } catch (e, stackTrace) {
+      debugPrint('Error al cerrar sesión: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cerrar la sesión.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Hola, $nombre • $tituloRol')),
+      appBar: AppBar(
+        title: Text('Hola, $nombre • $tituloRol'),
+        actions: [
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: () => _cerrarSesion(context),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -78,7 +103,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
-
-
-
